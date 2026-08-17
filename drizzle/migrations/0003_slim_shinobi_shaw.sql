@@ -1,0 +1,1 @@
+ALTER TABLE "people" ADD COLUMN "congregation" varchar(120) DEFAULT 'Sede' NOT NULL;

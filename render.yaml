@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: acolhimento-ad-rioverde
+    env: node
+    plan: starter
+    buildCommand: pnpm install && pnpm build
+    preDeployCommand: pnpm db:migrate
+    startCommand: pnpm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: PUBLIC_APP_URL
+        value: https://acolhimento-ad-rioverde.onrender.com
+      - key: DATABASE_URL
+        fromDatabase:
+          name: acolhimento-ad-rioverde-db
+          property: connectionString
+      - key: ADMIN_SESSION_SECRET
+        generateValue: true
+
+databases:
+  - name: acolhimento-ad-rioverde-db
+    plan: basic-256mb
