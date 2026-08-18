@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { api, type CustomField, type Congregation } from "@/lib/api";
+import { Link } from "wouter";
+import { api, type CustomField, type Congregation, type Volunteer } from "@/lib/api";
 
 // Mesmo formulário serve pro QR code (preenchimento pela própria pessoa) e pro preenchimento
 // assistido pela equipe de recepção — acessando com ?equipe=1 só muda a origem registrada.
@@ -31,6 +32,8 @@ export default function PublicFormPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [volunteer, setVolunteer] = useState<Volunteer | null>(null);
+  const [checkingVolunteer, setCheckingVolunteer] = useState(isStaffEntry);
 
   useEffect(() => {
     api
@@ -48,6 +51,18 @@ export default function PublicFormPage() {
       .get<CustomField[]>("/api/custom-fields")
       .then(setCustomFields)
       .catch(() => setCustomFields([]));
+
+    if (isStaffEntry) {
+      api
+        .get<Volunteer>("/api/volunteers/me")
+        .then((data) => {
+          setVolunteer(data);
+          setFilledBy(data.name);
+          setCongregation((prev) => prev || data.congregation);
+        })
+        .catch(() => setVolunteer(null))
+        .finally(() => setCheckingVolunteer(false));
+    }
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -79,6 +94,30 @@ export default function PublicFormPage() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  if (checkingVolunteer) {
+    return <div className="flex min-h-screen items-center justify-center text-sm text-muted">Carregando...</div>;
+  }
+
+  if (isStaffEntry && !volunteer) {
+    const redirect = encodeURIComponent(window.location.pathname + window.location.search);
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-6 text-center">
+        <div className="max-w-sm rounded-2xl border border-border bg-surface p-8">
+          <h1 className="font-display text-lg font-bold text-foreground">Acesso restrito à equipe</h1>
+          <p className="mt-2 text-sm leading-relaxed text-muted">
+            Esse formulário assistido é só para voluntários treinados e aprovados. Entre com seu acesso pra continuar.
+          </p>
+          <Link
+            href={`/voluntario?redirect=${redirect}`}
+            className="mt-4 inline-block rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark"
+          >
+            Entrar como voluntário
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   if (done) {
@@ -147,14 +186,18 @@ export default function PublicFormPage() {
 
           <div>
             <label className="mb-1.5 block text-sm font-medium text-foreground">Preenchido por</label>
-            <input
-              type="text"
-              required
-              placeholder="Nome do voluntário da recepção"
-              value={filledBy}
-              onChange={(e) => setFilledBy(e.target.value)}
-              className="w-full rounded-lg border border-border bg-surface px-4 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-            />
+            {volunteer ? (
+              <div className="w-full rounded-lg border border-border bg-border/30 px-4 py-2.5 text-sm text-foreground">{volunteer.name}</div>
+            ) : (
+              <input
+                type="text"
+                required
+                placeholder="Nome do voluntário da recepção"
+                value={filledBy}
+                onChange={(e) => setFilledBy(e.target.value)}
+                className="w-full rounded-lg border border-border bg-surface px-4 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+              />
+            )}
           </div>
 
           <div className="border-t border-border pt-4">

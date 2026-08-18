@@ -7,6 +7,8 @@ export const needTypeEnum = pgEnum("need_type", ["financeiro", "oracao", "aconse
 export const needStatusEnum = pgEnum("need_status", ["aberto", "resolvido"]);
 export const sexEnum = pgEnum("sex", ["masculino", "feminino"]);
 export const customFieldTypeEnum = pgEnum("custom_field_type", ["text", "checkbox"]);
+export const volunteerRoleEnum = pgEnum("volunteer_role", ["lider", "voluntario"]);
+export const volunteerStatusEnum = pgEnum("volunteer_status", ["pendente", "aprovado", "rejeitado"]);
 
 export const people = pgTable("people", {
   id: serial("id").primaryKey(),
@@ -83,6 +85,18 @@ export const congregations = pgTable("congregations", {
   active: boolean("active").notNull().default(true),
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const volunteers = pgTable("volunteers", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 320 }).notNull().unique(),
+  passwordHash: varchar("password_hash", { length: 255 }).notNull(),
+  congregation: varchar("congregation", { length: 120 }).notNull(),
+  role: volunteerRoleEnum("role").notNull().default("voluntario"),
+  status: volunteerStatusEnum("status").notNull().default("pendente"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  approvedAt: timestamp("approved_at"),
 });
 
 export const admins = pgTable("admins", {

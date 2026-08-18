@@ -102,3 +102,14 @@ export type Congregation = {
   active: boolean;
   sortOrder: number;
 };
+
+export type Volunteer = {
+  id: number;
+  name: string;
+  email: string;
+  congregation: string;
+  role: "lider" | "voluntario";
+  status: "pendente" | "aprovado" | "rejeitado";
+  createdAt: string;
+  approvedAt: string | null;
+};

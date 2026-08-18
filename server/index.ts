@@ -4,6 +4,7 @@ import { createServer } from "http";
 import { setupVite, serveStatic } from "./vite";
 import { registerPeopleRoutes } from "./people";
 import { registerAdminRoutes } from "./admin";
+import { registerVolunteerRoutes } from "./volunteers";
 
 process.on("unhandledRejection", (reason) => {
   console.error("[unhandledRejection] Erro não tratado — servidor continua no ar", reason);
@@ -16,6 +17,7 @@ async function main() {
   app.use(express.json({ limit: "5mb" }));
   registerPeopleRoutes(app);
   registerAdminRoutes(app);
+  registerVolunteerRoutes(app);
 
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);

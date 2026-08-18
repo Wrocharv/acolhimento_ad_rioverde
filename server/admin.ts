@@ -2,7 +2,7 @@ import type { Express, Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import ExcelJS from "exceljs";
 import { eq, and, asc, desc, sql } from "drizzle-orm";
-import { admins, people, interactions, needs, customFields, customFieldValues, congregations } from "../drizzle/schema";
+import { admins, people, interactions, needs, customFields, customFieldValues, congregations, volunteers } from "../drizzle/schema";
 import { getDb } from "./db";
 import { createSessionCookie, clearSessionCookie, requireAdmin, getAdminIdFromRequest } from "./auth";
 import { asyncHandler } from "./asyncHandler";
@@ -435,6 +435,65 @@ export function registerAdminRoutes(app: Express) {
       if (typeof req.body?.active === "boolean") updates.active = req.body.active;
       if (Object.keys(updates).length === 0) return res.status(400).json({ error: "no_fields" });
       await db.update(congregations).set(updates).where(eq(congregations.id, congregationId));
+      return res.json({ ok: true });
+    }),
+  );
+
+  app.get(
+    "/api/admin/volunteers",
+    requireAdmin,
+    asyncHandler(async (_req: Request, res: Response) => {
+      const db = getDb();
+      if (!db) return dbOr503(res);
+      const rows = await db.select().from(volunteers).orderBy(desc(volunteers.createdAt));
+      return res.json(rows);
+    }),
+  );
+
+  app.post(
+    "/api/admin/volunteers/:id/approve",
+    requireAdmin,
+    asyncHandler(async (req: Request, res: Response) => {
+      const db = getDb();
+      if (!db) return dbOr503(res);
+      const volunteerId = Number(req.params.id);
+      await db.update(volunteers).set({ status: "aprovado", approvedAt: new Date() }).where(eq(volunteers.id, volunteerId));
+      return res.json({ ok: true });
+    }),
+  );
+
+  app.post(
+    "/api/admin/volunteers/:id/reject",
+    requireAdmin,
+    asyncHandler(async (req: Request, res: Response) => {
+      const db = getDb();
+      if (!db) return dbOr503(res);
+      const volunteerId = Number(req.params.id);
+      await db.update(volunteers).set({ status: "rejeitado" }).where(eq(volunteers.id, volunteerId));
+      return res.json({ ok: true });
+    }),
+  );
+
+  app.post(
+    "/api/admin/volunteers/:id/promote",
+    requireAdmin,
+    asyncHandler(async (req: Request, res: Response) => {
+      const db = getDb();
+      if (!db) return dbOr503(res);
+      const volunteerId = Number(req.params.id);
+      await db.update(volunteers).set({ role: "lider" }).where(eq(volunteers.id, volunteerId));
+      return res.json({ ok: true });
+    }),
+  );
+
+  app.post(
+    "/api/admin/volunteers/:id/demote",
+    requireAdmin,
+    asyncHandler(async (req: Request, res: Response) => {
+      const db = getDb();
+      if (!db) return dbOr503(res);
+      const volunteerId = Number(req.params.id);
+      await db.update(volunteers).set({ role: "voluntario" }).where(eq(volunteers.id, volunteerId));
       return res.json({ ok: true });
     }),
   );
