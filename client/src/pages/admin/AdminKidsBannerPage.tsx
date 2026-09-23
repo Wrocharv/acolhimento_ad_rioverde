@@ -8,6 +8,16 @@ const campo =
 const botao = "rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-primary-dark disabled:opacity-60";
 const botaoLeve = "rounded-full border border-border px-4 py-2 text-sm font-semibold transition hover:border-primary hover:text-primary";
 
+/**
+ * Estilos de arte pensados pra crianca: fundo colorido, confete e bandeirinhas. Cada estilo traz
+ * o fundo (degrade), as cores da festa e a cor do texto de apoio.
+ */
+const ESTILOS = {
+  festa: { nome: "Festa", fundo: ["#ffd43b", "#ff7a59", "#7b5cff"], confete: ["#ffffff", "#ffe066", "#4dd0e1", "#ff8fab", "#8ce99a"], destaque: "#fff3bf" },
+  arcoiris: { nome: "Arco-íris", fundo: ["#4dabf7", "#9775fa", "#ff8787"], confete: ["#ffd43b", "#ffffff", "#69db7c", "#ffa8a8", "#66d9e8"], destaque: "#ffe066" },
+  parquinho: { nome: "Parquinho", fundo: ["#63e6be", "#4dabf7", "#845ef7"], confete: ["#ffffff", "#ffd43b", "#ff8787", "#b2f2bb", "#ffc9c9"], destaque: "#fff9db" },
+} as const;
+
 /** Quebra o texto no tamanho da arte, respeitando a largura disponivel. */
 function linhas(ctx: CanvasRenderingContext2D, texto: string, largura: number) {
   const palavras = texto.split(/\s+/);
@@ -38,7 +48,7 @@ export default function AdminKidsBannerPage() {
     frase: "Um dia inteiro de alegria para as crianças. Venha servir com a gente!",
     rodape: "Assembleia de Deus · Rio Verde",
   });
-  const [cor, setCor] = useState("#b8321f");
+  const [estilo, setEstilo] = useState<keyof typeof ESTILOS>("festa");
   const canvas = useRef<HTMLCanvasElement>(null);
   const link = `${location.origin}/reino-kids`;
 
@@ -61,28 +71,70 @@ export default function AdminKidsBannerPage() {
       ? new Date(`${dados.edicao.eventDate}T12:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "long" })
       : "";
 
+    const tema = ESTILOS[estilo];
     ctx.clearRect(0, 0, L, A);
-    const fundo = ctx.createLinearGradient(0, 0, L, A);
-    fundo.addColorStop(0, cor);
-    fundo.addColorStop(1, "#241b14");
+    const fundo = ctx.createLinearGradient(0, 0, L * 0.4, A);
+    tema.fundo.forEach((c, i) => fundo.addColorStop(i / (tema.fundo.length - 1), c));
     ctx.fillStyle = fundo;
     ctx.fillRect(0, 0, L, A);
 
-    // bolinhas de festa, so decoracao
-    const cores = ["#eab040", "#ffffff", "#f7f3ec"];
-    for (let i = 0; i < 26; i++) {
-      ctx.globalAlpha = 0.12 + (i % 3) * 0.05;
-      ctx.fillStyle = cores[i % 3];
+    // confete: bolinha, estrela e triangulo espalhados sem cobrir o miolo do cartaz
+    const estrela = (cx: number, cy: number, r: number) => {
       ctx.beginPath();
-      ctx.arc(((i * 137) % L) + 40, ((i * 311) % A) + 30, 14 + (i % 5) * 9, 0, Math.PI * 2);
+      for (let p = 0; p < 10; p++) {
+        const raio = p % 2 ? r * 0.45 : r;
+        const ang = (Math.PI / 5) * p - Math.PI / 2;
+        ctx.lineTo(cx + Math.cos(ang) * raio, cy + Math.sin(ang) * raio);
+      }
+      ctx.closePath();
       ctx.fill();
+    };
+    for (let i = 0; i < 46; i++) {
+      const x = ((i * 197) % (L - 60)) + 30;
+      const y = ((i * 373) % (A - 60)) + 30;
+      // No miolo (onde fica o texto e o QR) o confete fica bem apagado, pra nao atrapalhar a leitura.
+      const meio = x > 110 && x < L - 110 && y > 200;
+      ctx.globalAlpha = meio ? 0.13 : 0.8;
+      ctx.fillStyle = tema.confete[i % tema.confete.length];
+      const r = 10 + (i % 5) * 7;
+      if (i % 3 === 0) {
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (i % 3 === 1) {
+        estrela(x, y, r + 4);
+      } else {
+        ctx.beginPath();
+        ctx.moveTo(x, y - r);
+        ctx.lineTo(x + r, y + r);
+        ctx.lineTo(x - r, y + r);
+        ctx.closePath();
+        ctx.fill();
+      }
     }
     ctx.globalAlpha = 1;
 
+    // bandeirinhas no topo
+    const passo = L / 14;
+    for (let i = 0; i < 14; i++) {
+      ctx.fillStyle = tema.confete[i % tema.confete.length];
+      ctx.beginPath();
+      ctx.moveTo(i * passo, 0);
+      ctx.lineTo((i + 1) * passo, 0);
+      ctx.lineTo(i * passo + passo / 2, 62);
+      ctx.closePath();
+      ctx.fill();
+    }
+
     ctx.textAlign = "center";
-    ctx.fillStyle = "#eab040";
-    ctx.font = "600 38px Inter, system-ui, sans-serif";
-    ctx.fillText(arte.chamada.toUpperCase(), L / 2, 150);
+    // Sombra leve: garante leitura do texto branco sobre o fundo colorido.
+    ctx.shadowColor = "rgba(20,12,4,.35)";
+    ctx.shadowBlur = 18;
+    ctx.shadowOffsetY = 4;
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "700 40px Inter, system-ui, sans-serif";
+    ctx.fillText(arte.chamada.toUpperCase(), L / 2, 170);
 
     // O titulo e medido com a fonte dele; medir depois de trocar a fonte bagunçava o espaçamento.
     ctx.fillStyle = "#ffffff";
@@ -93,7 +145,7 @@ export default function AdminKidsBannerPage() {
     const base = 280 + linhasTitulo.length * (tamTitulo + 14);
 
     ctx.font = "400 36px Inter, system-ui, sans-serif";
-    ctx.fillStyle = "rgba(255,255,255,.92)";
+    ctx.fillStyle = "#ffffff";
     const linhasFrase = linhas(ctx, arte.frase, 820);
     linhasFrase.forEach((l, i) => ctx.fillText(l, L / 2, base + 40 + i * 50));
 
@@ -101,7 +153,7 @@ export default function AdminKidsBannerPage() {
     const infos = [data, dados.edicao.startTime, dados.edicao.place].filter(Boolean) as string[];
     let y = base + 40 + linhasFrase.length * 50 + 40;
     if (infos.length) {
-      ctx.fillStyle = "rgba(255,255,255,.14)";
+      ctx.fillStyle = "rgba(255,255,255,.22)";
       ctx.beginPath();
       ctx.roundRect(120, y, L - 240, 60 + (infos.length - 1) * 46, 30);
       ctx.fill();
@@ -112,11 +164,15 @@ export default function AdminKidsBannerPage() {
     }
 
     // vagas restantes
-    ctx.fillStyle = "#eab040";
+    ctx.fillStyle = tema.destaque;
     ctx.font = "700 40px Inter, system-ui, sans-serif";
     ctx.fillText(vagas > 0 ? `${vagas} vagas abertas nas equipes` : "Vagas encerradas — entre na fila", L / 2, y + 50);
 
     // QR
+    ctx.shadowColor = "transparent";
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+
     QRCode.toDataURL(link, { width: 420, margin: 1, color: { dark: "#241b14", light: "#ffffff" } }).then((url) => {
       const img = new Image();
       img.onload = () => {
@@ -128,19 +184,21 @@ export default function AdminKidsBannerPage() {
         ctx.roundRect(qx - 22, qy - 22, tamanho + 44, tamanho + 44, 28);
         ctx.fill();
         ctx.drawImage(img, qx, qy, tamanho, tamanho);
+        ctx.shadowColor = "rgba(20,12,4,.35)";
+        ctx.shadowBlur = 14;
         ctx.fillStyle = "#ffffff";
-        ctx.font = "600 32px Inter, system-ui, sans-serif";
+        ctx.font = "700 34px Inter, system-ui, sans-serif";
         ctx.fillText("Aponte a câmera e inscreva-se", L / 2, A - 130);
-        ctx.font = "400 26px Inter, system-ui, sans-serif";
-        ctx.fillStyle = "rgba(255,255,255,.75)";
+        ctx.font = "500 26px Inter, system-ui, sans-serif";
+        ctx.fillStyle = "rgba(255,255,255,.9)";
         ctx.fillText(link.replace(/^https?:\/\//, ""), L / 2, A - 92);
-        ctx.fillStyle = "#eab040";
+        ctx.fillStyle = tema.destaque;
         ctx.font = "600 28px Inter, system-ui, sans-serif";
         ctx.fillText(arte.rodape, L / 2, A - 44);
       };
       img.src = url;
     });
-  }, [dados, arte, cor, link]);
+  }, [dados, arte, estilo, link]);
 
   function baixar(nome: string, url: string) {
     const a = document.createElement("a");
@@ -193,17 +251,21 @@ export default function AdminKidsBannerPage() {
             <input className={`mt-1 ${campo}`} value={arte.rodape} onChange={(e) => setArte({ ...arte, rodape: e.target.value })} />
           </label>
           <div className="text-sm">
-            <span className="font-medium">Cor</span>
-            <div className="mt-2 flex gap-2">
-              {["#b8321f", "#1f7a4d", "#2f5d8a", "#7a4ea3", "#c9820b"].map((c) => (
+            <span className="font-medium">Estilo</span>
+            <div className="mt-2 grid gap-2">
+              {(Object.keys(ESTILOS) as (keyof typeof ESTILOS)[]).map((k) => (
                 <button
-                  key={c}
+                  key={k}
                   type="button"
-                  aria-label={`Cor ${c}`}
-                  onClick={() => setCor(c)}
-                  className={`h-9 w-9 rounded-full ${cor === c ? "ring-2 ring-foreground ring-offset-2" : ""}`}
-                  style={{ background: c }}
-                />
+                  onClick={() => setEstilo(k)}
+                  className={`flex items-center gap-3 rounded-xl border p-2 text-left text-sm font-semibold transition ${estilo === k ? "border-primary ring-1 ring-primary" : "border-border"}`}
+                >
+                  <span
+                    className="h-8 w-14 shrink-0 rounded-lg"
+                    style={{ background: `linear-gradient(135deg, ${ESTILOS[k].fundo.join(", ")})` }}
+                  />
+                  {ESTILOS[k].nome}
+                </button>
               ))}
             </div>
           </div>
