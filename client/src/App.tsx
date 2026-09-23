@@ -12,6 +12,7 @@ import VolunteerAuthPage from "@/pages/VolunteerAuthPage";
 import VolunteerDashboardPage from "@/pages/VolunteerDashboardPage";
 import KidsSignupPage from "@/pages/KidsSignupPage";
 import AdminKidsPage from "@/pages/admin/AdminKidsPage";
+import AdminKidsBannerPage from "@/pages/admin/AdminKidsBannerPage";
 
 export default function App() {
   return (
@@ -21,6 +22,7 @@ export default function App() {
       <Route path="/admin/perguntas" component={AdminCustomFieldsPage} />
       <Route path="/admin/congregacoes" component={AdminCongregationsPage} />
       <Route path="/admin/voluntarios" component={AdminVolunteersPage} />
+      <Route path="/admin/kids/divulgacao" component={AdminKidsBannerPage} />
       <Route path="/admin/kids" component={AdminKidsPage} />
       <Route path="/admin/pessoas/:id" component={AdminPersonDetailPage} />
       <Route path="/admin/exportar/imprimir" component={AdminExportPrintPage} />
