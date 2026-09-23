@@ -1,6 +1,9 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { Request, Response, NextFunction } from "express";
 import * as cookie from "cookie";
+import { eq } from "drizzle-orm";
+import { admins } from "../drizzle/schema";
+import { getDb } from "./db";
 import { ENV } from "./env";
 
 const COOKIE_NAME = "acolhimento_admin_session";
@@ -47,11 +50,39 @@ export function getAdminIdFromRequest(req: Request): number | null {
   return parseSessionToken(cookies[COOKIE_NAME]);
 }
 
-export function requireAdmin(req: Request, res: Response, next: NextFunction) {
+export type AdminLogado = { id: number; name: string; email: string; role: "total" | "kids" };
+
+/** Quem esta logado agora, com o papel dele. */
+export async function adminDaSessao(req: Request): Promise<AdminLogado | null> {
   const adminId = getAdminIdFromRequest(req);
-  if (!adminId) {
-    return res.status(401).json({ error: "not_authenticated" });
-  }
-  (req as Request & { adminId: number }).adminId = adminId;
+  const db = getDb();
+  if (!adminId || !db) return null;
+  const [linha] = await db
+    .select({ id: admins.id, name: admins.name, email: admins.email, role: admins.role })
+    .from(admins)
+    .where(eq(admins.id, adminId))
+    .limit(1);
+  return linha ?? null;
+}
+
+/**
+ * Painel inteiro: so quem tem acesso total. Quem foi criado so para a Missao Reino Kids nao
+ * enxerga a base de pessoas da igreja.
+ */
+export async function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  const admin = await adminDaSessao(req).catch(() => null);
+  if (!admin) return res.status(401).json({ error: "not_authenticated" });
+  if (admin.role !== "total") return res.status(403).json({ error: "sem_permissao" });
+  (req as Request & { adminId: number; admin: AdminLogado }).adminId = admin.id;
+  (req as Request & { adminId: number; admin: AdminLogado }).admin = admin;
+  next();
+}
+
+/** Telas da Missao Reino Kids: acesso total ou acesso so do evento. */
+export async function requireKidsAdmin(req: Request, res: Response, next: NextFunction) {
+  const admin = await adminDaSessao(req).catch(() => null);
+  if (!admin) return res.status(401).json({ error: "not_authenticated" });
+  (req as Request & { adminId: number; admin: AdminLogado }).adminId = admin.id;
+  (req as Request & { adminId: number; admin: AdminLogado }).admin = admin;
   next();
 }

@@ -33,6 +33,9 @@ export type AdminUser = {
   id: number;
   email: string;
   name: string;
+  /** "total" ve tudo; "kids" so as telas da Missão Reino Kids. */
+  role?: "total" | "kids";
+  createdAt?: string;
 };
 
 export type PersonStatus = "visitante" | "decisao" | "em_acompanhamento" | "membro" | "afastado";

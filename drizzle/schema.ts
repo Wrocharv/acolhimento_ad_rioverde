@@ -8,6 +8,7 @@ export const needStatusEnum = pgEnum("need_status", ["aberto", "resolvido"]);
 export const sexEnum = pgEnum("sex", ["masculino", "feminino"]);
 export const customFieldTypeEnum = pgEnum("custom_field_type", ["text", "checkbox"]);
 export const volunteerRoleEnum = pgEnum("volunteer_role", ["lider", "voluntario"]);
+export const adminRoleEnum = pgEnum("admin_role", ["total", "kids"]);
 export const kidsSignupStatusEnum = pgEnum("kids_signup_status", ["confirmado", "espera", "cancelado"]);
 export const volunteerStatusEnum = pgEnum("volunteer_status", ["pendente", "aprovado", "rejeitado"]);
 
@@ -105,6 +106,8 @@ export const admins = pgTable("admins", {
   email: varchar("email", { length: 320 }).notNull().unique(),
   passwordHash: varchar("password_hash", { length: 255 }).notNull(),
   name: varchar("name", { length: 255 }).notNull(),
+  // "total" ve o sistema inteiro; "kids" so as telas da Missao Reino Kids.
+  role: adminRoleEnum("role").notNull().default("total"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

@@ -4,7 +4,7 @@ import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { getDb } from "./db";
 import { kidsEditions, kidsSignups, kidsTeams } from "../drizzle/schema";
 import { asyncHandler } from "./asyncHandler";
-import { requireAdmin } from "./auth";
+import { requireKidsAdmin } from "./auth";
 
 function dbOr503(res: Response) {
   res.status(503).json({ error: "database_unavailable" });
@@ -189,7 +189,7 @@ export function registerKidsRoutes(app: Express) {
   // ---------- Painel ----------
   app.get(
     "/api/admin/kids/painel",
-    requireAdmin,
+    requireKidsAdmin,
     asyncHandler(async (req: Request, res: Response) => {
       const db = getDb();
       if (!db) return dbOr503(res);
@@ -209,7 +209,7 @@ export function registerKidsRoutes(app: Express) {
 
   app.post(
     "/api/admin/kids/edicoes",
-    requireAdmin,
+    requireKidsAdmin,
     asyncHandler(async (req: Request, res: Response) => {
       const db = getDb();
       if (!db) return dbOr503(res);
@@ -223,7 +223,7 @@ export function registerKidsRoutes(app: Express) {
 
   app.patch(
     "/api/admin/kids/edicoes/:id",
-    requireAdmin,
+    requireKidsAdmin,
     asyncHandler(async (req: Request, res: Response) => {
       const db = getDb();
       if (!db) return dbOr503(res);
@@ -253,7 +253,7 @@ export function registerKidsRoutes(app: Express) {
 
   app.patch(
     "/api/admin/kids/equipes/:id",
-    requireAdmin,
+    requireKidsAdmin,
     asyncHandler(async (req: Request, res: Response) => {
       const db = getDb();
       if (!db) return dbOr503(res);
@@ -273,7 +273,7 @@ export function registerKidsRoutes(app: Express) {
 
   app.post(
     "/api/admin/kids/equipes",
-    requireAdmin,
+    requireKidsAdmin,
     asyncHandler(async (req: Request, res: Response) => {
       const db = getDb();
       if (!db) return dbOr503(res);
@@ -292,7 +292,7 @@ export function registerKidsRoutes(app: Express) {
    */
   app.patch(
     "/api/admin/kids/inscricoes/:id",
-    requireAdmin,
+    requireKidsAdmin,
     asyncHandler(async (req: Request, res: Response) => {
       const db = getDb();
       if (!db) return dbOr503(res);
@@ -339,7 +339,7 @@ export function registerKidsRoutes(app: Express) {
 
   app.delete(
     "/api/admin/kids/inscricoes/:id",
-    requireAdmin,
+    requireKidsAdmin,
     asyncHandler(async (req: Request, res: Response) => {
       const db = getDb();
       if (!db) return dbOr503(res);

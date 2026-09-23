@@ -57,6 +57,13 @@
       "when": 1790204532941,
       "tag": "0007_huge_firedrake",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790206111357,
+      "tag": "0008_chemical_excalibur",
+      "breakpoints": true
     }
   ]
 }

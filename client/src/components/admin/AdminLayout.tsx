@@ -1,25 +1,34 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
-import { api } from "@/lib/api";
+import { api, type AdminUser } from "@/lib/api";
 
+/** `kids: true` = aba que quem so cuida da Missao Reino Kids tambem enxerga. */
 const tabs = [
   { href: "/admin", label: "Pessoas" },
   { href: "/admin/boas-vindas", label: "Boas-vindas pendentes" },
   { href: "/admin/perguntas", label: "Perguntas personalizadas" },
   { href: "/admin/congregacoes", label: "Congregações" },
   { href: "/admin/voluntarios", label: "Voluntários" },
-  { href: "/admin/kids", label: "Missão Reino Kids" },
-  { href: "/admin/kids/divulgacao", label: "Divulgação Kids" },
+  { href: "/admin/kids", label: "Missão Reino Kids", kids: true },
+  { href: "/admin/kids/divulgacao", label: "Divulgação Kids", kids: true },
+  { href: "/admin/administradores", label: "Administradores" },
 ];
 
 export function AdminLayout({ children }: { children: ReactNode }) {
   const [location, navigate] = useLocation();
   const [checking, setChecking] = useState(true);
+  const [eu, setEu] = useState<AdminUser | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     api
-      .get("/api/admin/me")
+      .get<AdminUser>("/api/admin/me")
+      .then((admin) => {
+        if (cancelled) return;
+        setEu(admin);
+        // Quem so cuida do evento nao abre as telas da igreja: cai direto na area do Kids.
+        if (admin.role === "kids" && !location.startsWith("/admin/kids")) navigate("/admin/kids");
+      })
       .catch(() => {
         if (!cancelled) navigate("/admin/login");
       })
@@ -29,7 +38,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [navigate]);
+  }, [navigate, location]);
 
   async function handleLogout() {
     await api.post("/api/admin/logout");
@@ -52,7 +61,9 @@ export function AdminLayout({ children }: { children: ReactNode }) {
       </header>
       <nav className="border-b border-border bg-surface px-6">
         <div className="mx-auto flex max-w-5xl gap-6">
-          {tabs.map((tab) => (
+          {tabs
+            .filter((tab) => eu?.role !== "kids" || tab.kids)
+            .map((tab) => (
             <Link
               key={tab.href}
               href={tab.href}
@@ -60,9 +71,9 @@ export function AdminLayout({ children }: { children: ReactNode }) {
                 location === tab.href ? "border-primary text-primary" : "border-transparent text-muted hover:text-foreground"
               }`}
             >
-              {tab.label}
-            </Link>
-          ))}
+                {tab.label}
+              </Link>
+            ))}
         </div>
       </nav>
       <main className="mx-auto max-w-5xl px-6 py-8">{children}</main>

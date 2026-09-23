@@ -139,6 +139,9 @@ export default function AdminKidsPage() {
               </option>
             ))}
           </select>
+          <a className={botaoLeve} href={`/admin/kids/lista?edicao=${dados.edicao.id}`}>
+            Lista por equipe
+          </a>
           <button type="button" className={botaoLeve} onClick={baixarContatos}>
             Baixar contatos
           </button>

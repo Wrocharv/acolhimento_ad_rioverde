@@ -1,5 +1,6 @@
 import type { Express, Request, Response } from "express";
 import bcrypt from "bcryptjs";
+import { z } from "zod";
 import ExcelJS from "exceljs";
 import { eq, and, asc, desc, sql } from "drizzle-orm";
 import { admins, people, interactions, needs, customFields, customFieldValues, congregations, volunteers } from "../drizzle/schema";
@@ -105,7 +106,7 @@ export function registerAdminRoutes(app: Express) {
       }
 
       res.setHeader("Set-Cookie", createSessionCookie(admin.id));
-      return res.json({ id: admin.id, email: admin.email, name: admin.name });
+      return res.json({ id: admin.id, email: admin.email, name: admin.name, role: admin.role });
     }),
   );
 
@@ -123,7 +124,99 @@ export function registerAdminRoutes(app: Express) {
       if (!adminId) return res.status(401).json({ error: "not_authenticated" });
       const [admin] = await db.select().from(admins).where(eq(admins.id, adminId)).limit(1);
       if (!admin) return res.status(401).json({ error: "not_authenticated" });
-      return res.json({ id: admin.id, email: admin.email, name: admin.name });
+      return res.json({ id: admin.id, email: admin.email, name: admin.name, role: admin.role });
+    }),
+  );
+
+  // ---------- Quem administra o painel ----------
+  app.get(
+    "/api/admin/administradores",
+    requireAdmin,
+    asyncHandler(async (_req: Request, res: Response) => {
+      const db = getDb();
+      if (!db) return dbOr503(res);
+      const lista = await db
+        .select({ id: admins.id, name: admins.name, email: admins.email, role: admins.role, createdAt: admins.createdAt })
+        .from(admins)
+        .orderBy(admins.id);
+      res.json(lista);
+    }),
+  );
+
+  app.post(
+    "/api/admin/administradores",
+    requireAdmin,
+    asyncHandler(async (req: Request, res: Response) => {
+      const db = getDb();
+      if (!db) return dbOr503(res);
+      const dados = z
+        .object({
+          name: z.string().trim().min(3).max(255),
+          email: z.string().trim().toLowerCase().email(),
+          password: z.string().min(6).max(72),
+          role: z.enum(["total", "kids"]),
+        })
+        .safeParse(req.body);
+      if (!dados.success) return res.status(400).json({ error: "invalid_input", details: dados.error.flatten() });
+
+      const [existe] = await db.select({ id: admins.id }).from(admins).where(eq(admins.email, dados.data.email)).limit(1);
+      if (existe) return res.status(409).json({ error: "email_ja_usado" });
+
+      const [criado] = await db
+        .insert(admins)
+        .values({
+          name: dados.data.name,
+          email: dados.data.email,
+          passwordHash: await bcrypt.hash(dados.data.password, 10),
+          role: dados.data.role,
+        })
+        .returning({ id: admins.id, name: admins.name, email: admins.email, role: admins.role, createdAt: admins.createdAt });
+      res.json(criado);
+    }),
+  );
+
+  app.patch(
+    "/api/admin/administradores/:id",
+    requireAdmin,
+    asyncHandler(async (req: Request, res: Response) => {
+      const db = getDb();
+      if (!db) return dbOr503(res);
+      const eu = (req as Request & { adminId: number }).adminId;
+      const alvo = Number(req.params.id);
+      const dados = z
+        .object({ name: z.string().trim().min(3).max(255).optional(), role: z.enum(["total", "kids"]).optional(), password: z.string().min(6).max(72).optional() })
+        .safeParse(req.body);
+      if (!dados.success) return res.status(400).json({ error: "invalid_input" });
+
+      // Ninguem tira o proprio acesso total, pra nao trancar a porta por engano.
+      if (alvo === eu && dados.data.role === "kids") return res.status(400).json({ error: "nao_pode_rebaixar_voce" });
+
+      const mudancas: Record<string, unknown> = {};
+      if (dados.data.name) mudancas.name = dados.data.name;
+      if (dados.data.role) mudancas.role = dados.data.role;
+      if (dados.data.password) mudancas.passwordHash = await bcrypt.hash(dados.data.password, 10);
+
+      const [linha] = await db
+        .update(admins)
+        .set(mudancas)
+        .where(eq(admins.id, alvo))
+        .returning({ id: admins.id, name: admins.name, email: admins.email, role: admins.role, createdAt: admins.createdAt });
+      if (!linha) return res.status(404).json({ error: "nao_encontrado" });
+      res.json(linha);
+    }),
+  );
+
+  app.delete(
+    "/api/admin/administradores/:id",
+    requireAdmin,
+    asyncHandler(async (req: Request, res: Response) => {
+      const db = getDb();
+      if (!db) return dbOr503(res);
+      const eu = (req as Request & { adminId: number }).adminId;
+      const alvo = Number(req.params.id);
+      if (alvo === eu) return res.status(400).json({ error: "nao_pode_remover_voce" });
+      await db.delete(admins).where(eq(admins.id, alvo));
+      res.json({ ok: true });
     }),
   );
 
