@@ -10,6 +10,8 @@ import AdminCongregationsPage from "@/pages/admin/AdminCongregationsPage";
 import AdminVolunteersPage from "@/pages/admin/AdminVolunteersPage";
 import VolunteerAuthPage from "@/pages/VolunteerAuthPage";
 import VolunteerDashboardPage from "@/pages/VolunteerDashboardPage";
+import KidsSignupPage from "@/pages/KidsSignupPage";
+import AdminKidsPage from "@/pages/admin/AdminKidsPage";
 
 export default function App() {
   return (
@@ -19,9 +21,11 @@ export default function App() {
       <Route path="/admin/perguntas" component={AdminCustomFieldsPage} />
       <Route path="/admin/congregacoes" component={AdminCongregationsPage} />
       <Route path="/admin/voluntarios" component={AdminVolunteersPage} />
+      <Route path="/admin/kids" component={AdminKidsPage} />
       <Route path="/admin/pessoas/:id" component={AdminPersonDetailPage} />
       <Route path="/admin/exportar/imprimir" component={AdminExportPrintPage} />
       <Route path="/admin" component={AdminPeoplePage} />
+      <Route path="/reino-kids" component={KidsSignupPage} />
       <Route path="/voluntario/painel" component={VolunteerDashboardPage} />
       <Route path="/voluntario" component={VolunteerAuthPage} />
       <Route path="/" component={PublicFormPage} />

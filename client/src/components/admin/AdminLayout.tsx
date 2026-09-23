@@ -8,6 +8,7 @@ const tabs = [
   { href: "/admin/perguntas", label: "Perguntas personalizadas" },
   { href: "/admin/congregacoes", label: "Congregações" },
   { href: "/admin/voluntarios", label: "Voluntários" },
+  { href: "/admin/kids", label: "Missão Reino Kids" },
 ];
 
 export function AdminLayout({ children }: { children: ReactNode }) {

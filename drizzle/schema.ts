@@ -8,6 +8,7 @@ export const needStatusEnum = pgEnum("need_status", ["aberto", "resolvido"]);
 export const sexEnum = pgEnum("sex", ["masculino", "feminino"]);
 export const customFieldTypeEnum = pgEnum("custom_field_type", ["text", "checkbox"]);
 export const volunteerRoleEnum = pgEnum("volunteer_role", ["lider", "voluntario"]);
+export const kidsSignupStatusEnum = pgEnum("kids_signup_status", ["confirmado", "espera", "cancelado"]);
 export const volunteerStatusEnum = pgEnum("volunteer_status", ["pendente", "aprovado", "rejeitado"]);
 
 export const people = pgTable("people", {
@@ -105,4 +106,50 @@ export const admins = pgTable("admins", {
   passwordHash: varchar("password_hash", { length: 255 }).notNull(),
   name: varchar("name", { length: 255 }).notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+/**
+ * Missao Reino Kids: as equipes de servico do evento. Sao linhas (e nao um enum) porque o
+ * Wellington muda o nome e o numero de vagas de uma edicao pra outra.
+ */
+export const kidsTeams = pgTable("kids_teams", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 120 }).notNull(),
+  slots: integer("slots").notNull().default(10),
+  active: boolean("active").notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+/** Cada realizacao do evento. As equipes se repetem; as inscricoes sao por edicao. */
+export const kidsEditions = pgTable("kids_editions", {
+  id: serial("id").primaryKey(),
+  title: varchar("title", { length: 160 }).notNull().default("Missão Reino Kids"),
+  eventDate: date("event_date"),
+  startTime: varchar("start_time", { length: 40 }),
+  place: varchar("place", { length: 200 }),
+  notes: text("notes"),
+  open: boolean("open").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+/**
+ * Inscricao de um voluntario numa equipe. "espera" e a fila daquela equipe, na ordem de
+ * inscricao — quem sobe pra vaga e sempre escolhido pelo administrador, nunca automatico.
+ */
+export const kidsSignups = pgTable("kids_signups", {
+  id: serial("id").primaryKey(),
+  editionId: integer("edition_id").notNull().references(() => kidsEditions.id),
+  teamId: integer("team_id").notNull().references(() => kidsTeams.id),
+  fullName: varchar("full_name", { length: 255 }).notNull(),
+  phone: varchar("phone", { length: 20 }).notNull(),
+  age: integer("age"),
+  congregation: varchar("congregation", { length: 120 }),
+  vestSize: varchar("vest_size", { length: 6 }),
+  experience: text("experience"),
+  notes: text("notes"),
+  status: kidsSignupStatusEnum("status").notNull().default("confirmado"),
+  attendedAt: timestamp("attended_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

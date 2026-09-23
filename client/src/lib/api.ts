@@ -113,3 +113,41 @@ export type Volunteer = {
   createdAt: string;
   approvedAt: string | null;
 };
+
+export type KidsEdicao = {
+  id: number;
+  title: string;
+  eventDate: string | null;
+  startTime: string | null;
+  place: string | null;
+  notes: string | null;
+  open: boolean;
+};
+
+export type KidsTeamVagas = { id: number; name: string; slots: number; confirmados: number; vagas: number; fila: number };
+
+export type KidsEvento = {
+  edicao: KidsEdicao;
+  equipes: KidsTeamVagas[];
+  totalVagas: number;
+  totalConfirmados: number;
+  lotado: boolean;
+};
+
+export type KidsSignup = {
+  id: number;
+  editionId: number;
+  teamId: number;
+  fullName: string;
+  phone: string;
+  age: number | null;
+  congregation: string | null;
+  vestSize: string | null;
+  experience: string | null;
+  notes: string | null;
+  status: "confirmado" | "espera" | "cancelado";
+  attendedAt: string | null;
+  createdAt: string;
+};
+
+export type KidsPainel = { edicoes: KidsEdicao[]; edicao: KidsEdicao; equipes: KidsTeamVagas[]; inscricoes: KidsSignup[] };
