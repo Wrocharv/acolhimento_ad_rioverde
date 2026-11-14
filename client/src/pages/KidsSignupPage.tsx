@@ -116,7 +116,9 @@ export default function KidsSignupPage() {
 
       {fechado ? (
         <p className="mt-6 rounded-2xl border border-border bg-surface p-6 text-center text-sm text-muted">
-          As inscrições desta edição estão encerradas. Fique atento: em breve abrimos a próxima.
+          {edicao.situacao === "encerrado"
+            ? "Esta edição foi encerrada. Obrigado a todos que serviram! Fique atento: em breve abrimos a próxima."
+            : "As inscrições estão fechadas no momento. Fique atento aos avisos da igreja."}
         </p>
       ) : (
         <form onSubmit={enviar} className="mt-6 space-y-6">

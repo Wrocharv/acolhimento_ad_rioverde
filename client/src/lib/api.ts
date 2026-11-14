@@ -125,6 +125,7 @@ export type KidsEdicao = {
   place: string | null;
   notes: string | null;
   open: boolean;
+  situacao: "aberto" | "fechado" | "encerrado";
 };
 
 export type KidsTeamVagas = { id: number; name: string; slots: number; confirmados: number; vagas: number; fila: number; pendentes: number };

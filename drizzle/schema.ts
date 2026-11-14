@@ -133,6 +133,8 @@ export const kidsEditions = pgTable("kids_editions", {
   place: varchar("place", { length: 200 }),
   notes: text("notes"),
   open: boolean("open").notNull().default(true),
+  /** aberto = recebendo inscricoes; fechado = inscricoes pausadas; encerrado = o evento ja passou. `open` acompanha (aberto = true). */
+  situacao: varchar("situacao", { length: 12 }).notNull().default("aberto"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

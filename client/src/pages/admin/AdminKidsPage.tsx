@@ -17,6 +17,12 @@ const whatsapp = (fone: string, texto: string) => `https://wa.me/55${fone.replac
  * Painel da Missao Reino Kids: equipes, quem esta confirmado, quem esta na fila e a presenca do dia.
  * Subir alguem da fila e sempre manual — o Wellington escolhe quem entra quando abre vaga.
  */
+const SITUACAO_EDICAO: Record<string, { nome: string; cor: string }> = {
+  aberto: { nome: "Aberto", cor: "bg-success/10 text-success" },
+  fechado: { nome: "Fechado", cor: "bg-warning/10 text-warning" },
+  encerrado: { nome: "Encerrado", cor: "bg-background text-muted" },
+};
+
 export default function AdminKidsPage() {
   const [dados, setDados] = useState<KidsPainel | null>(null);
   const [equipeAberta, setEquipeAberta] = useState<number | null>(null);
@@ -157,7 +163,7 @@ export default function AdminKidsPage() {
           >
             {dados.edicoes.map((ed) => (
               <option key={ed.id} value={ed.id}>
-                {ed.title} {ed.open ? "(aberta)" : ""}
+                {ed.title} · {SITUACAO_EDICAO[ed.situacao]?.nome ?? ed.situacao}
               </option>
             ))}
           </select>
@@ -167,16 +173,25 @@ export default function AdminKidsPage() {
           <button type="button" className={botaoLeve} onClick={baixarContatos}>
             Baixar contatos
           </button>
-          <button
-            type="button"
-            className={botaoLeve}
-            onClick={async () => {
-              await api.patch(`/api/admin/kids/edicoes/${dados.edicao.id}`, { open: !dados.edicao.open });
-              carregar(dados.edicao.id);
-            }}
-          >
-            {dados.edicao.open ? "Encerrar inscrições" : "Reabrir inscrições"}
-          </button>
+          <label className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold ${SITUACAO_EDICAO[dados.edicao.situacao]?.cor ?? ""}`}>
+            Situação
+            <select
+              className="rounded-full border border-border bg-surface px-2 py-1 text-xs text-foreground"
+              value={dados.edicao.situacao}
+              onChange={async (e) => {
+                const situacao = e.target.value;
+                if (situacao === "aberto" && dados.edicoes.some((ed) => ed.id !== dados.edicao.id && ed.situacao === "aberto")) {
+                  if (!confirm("Já existe outra edição aberta. Ela vai ficar Fechada. Continuar?")) return;
+                }
+                await api.patch(`/api/admin/kids/edicoes/${dados.edicao.id}`, { situacao });
+                carregar(dados.edicao.id);
+              }}
+            >
+              <option value="aberto">Aberto — recebendo inscrições</option>
+              <option value="fechado">Fechado — inscrições pausadas</option>
+              <option value="encerrado">Encerrado — evento já aconteceu</option>
+            </select>
+          </label>
           <button
             type="button"
             className={botaoLeve}

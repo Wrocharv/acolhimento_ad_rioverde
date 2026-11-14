@@ -201,9 +201,12 @@ export function registerKidsRoutes(app: Express) {
       const db = getDb();
       if (!db) return dbOr503(res);
       const title = String(req.body?.title ?? "").trim() || "Missão Reino";
-      const [nova] = await db.insert(kidsEditions).values({ title }).returning();
-      // So uma edicao aberta por vez: as anteriores fecham sozinhas.
-      await db.update(kidsEditions).set({ open: false }).where(sql`${kidsEditions.id} <> ${nova.id}`);
+      const [nova] = await db.insert(kidsEditions).values({ title, situacao: "aberto", open: true }).returning();
+      // So uma edicao aberta por vez: a que estava aberta passa a encerrada (o evento dela ja foi).
+      await db
+        .update(kidsEditions)
+        .set({ open: false, situacao: "encerrado" })
+        .where(and(sql`${kidsEditions.id} <> ${nova.id}`, eq(kidsEditions.situacao, "aberto")));
       res.json(nova);
     }),
   );
@@ -222,18 +225,27 @@ export function registerKidsRoutes(app: Express) {
           place: z.string().trim().max(200).optional().nullable(),
           notes: z.string().trim().max(2000).optional().nullable(),
           open: z.boolean().optional(),
+          situacao: z.enum(["aberto", "fechado", "encerrado"]).optional(),
         })
         .safeParse(req.body);
       if (!dados.success) return res.status(400).json({ error: "invalid_input" });
       const mudancas = { ...dados.data };
       if (mudancas.eventDate === "") mudancas.eventDate = null;
+      // `open` e `situacao` andam juntos.
+      if (mudancas.situacao) mudancas.open = mudancas.situacao === "aberto";
+      else if (mudancas.open !== undefined) mudancas.situacao = mudancas.open ? "aberto" : "fechado";
       const [linha] = await db
         .update(kidsEditions)
         .set(mudancas)
         .where(eq(kidsEditions.id, Number(req.params.id)))
         .returning();
       if (!linha) return res.status(404).json({ error: "nao_encontrado" });
-      if (mudancas.open) await db.update(kidsEditions).set({ open: false }).where(sql`${kidsEditions.id} <> ${linha.id}`);
+      // So uma aberta por vez: a outra que estava aberta fica "fechado".
+      if (mudancas.open)
+        await db
+          .update(kidsEditions)
+          .set({ open: false, situacao: "fechado" })
+          .where(and(sql`${kidsEditions.id} <> ${linha.id}`, eq(kidsEditions.situacao, "aberto")));
       res.json(linha);
     }),
   );
