@@ -51,7 +51,10 @@ async function edicaoAtual(db: Banco) {
 
 /** Quantos confirmados e quantos na fila, equipe por equipe. */
 async function equipesComVagas(db: Banco, editionId: number) {
-  const equipes = await db.select().from(kidsTeams).where(eq(kidsTeams.active, true)).orderBy(asc(kidsTeams.sortOrder), asc(kidsTeams.id));
+  // Em ordem alfabetica (pedido do Wellington), no formulario publico e no painel.
+  const equipes = (await db.select().from(kidsTeams).where(eq(kidsTeams.active, true))).sort((a, b) =>
+    a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" }),
+  );
   const contagem = await db
     .select({ teamId: kidsSignups.teamId, status: kidsSignups.status, n: sql<number>`count(*)::int` })
     .from(kidsSignups)
