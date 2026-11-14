@@ -71,6 +71,7 @@ async function equipesComVagas(db: Banco, editionId: number) {
       confirmados,
       vagas: Math.max(e.slots - confirmados, 0),
       fila: n("espera"),
+      pendentes: n("pendente"),
     };
   });
 }
@@ -79,6 +80,7 @@ const soDigitos = (v: string) => v.replace(/\D/g, "");
 
 const inscricaoSchema = z.object({
   teamId: z.number().int(),
+  secondTeamId: z.number().int().optional().nullable(),
   fullName: z.string().trim().min(3).max(255),
   phone: z.string().trim().min(10).max(20),
   age: z.number().int().min(10).max(99).optional().nullable(),
@@ -129,27 +131,26 @@ export function registerKidsRoutes(app: Express) {
         const criado = await db.transaction(async (tx) => {
           const [equipe] = await tx.select().from(kidsTeams).where(eq(kidsTeams.id, input.teamId)).limit(1);
           if (!equipe || !equipe.active) throw new Error("equipe_invalida");
+          let segunda: typeof equipe | null = null;
+          if (input.secondTeamId && input.secondTeamId !== equipe.id) {
+            [segunda] = await tx.select().from(kidsTeams).where(eq(kidsTeams.id, input.secondTeamId)).limit(1);
+            if (!segunda || !segunda.active) throw new Error("equipe_invalida");
+          }
 
           const [ja] = await tx
             .select({ id: kidsSignups.id, status: kidsSignups.status })
             .from(kidsSignups)
-            .where(and(eq(kidsSignups.editionId, edicao.id), eq(kidsSignups.phone, phone), sql`${kidsSignups.status} <> 'cancelado'`))
+            .where(and(eq(kidsSignups.editionId, edicao.id), eq(kidsSignups.phone, phone), sql`${kidsSignups.status} not in ('cancelado', 'recusado')`))
             .limit(1);
           if (ja) throw new Error("ja_inscrito");
 
-          const [{ n }] = await tx
-            .select({ n: sql<number>`count(*)::int` })
-            .from(kidsSignups)
-            .where(and(eq(kidsSignups.editionId, edicao.id), eq(kidsSignups.teamId, equipe.id), eq(kidsSignups.status, "confirmado")));
-
-          const temVaga = Number(n) < equipe.slots;
-          if (!temVaga && !input.aceitaFila) throw new Error("equipe_lotada");
-
+          // Toda inscricao entra aguardando aprovacao: quem aceita (e em qual das duas opcoes) e o administrador.
           const [linha] = await tx
             .insert(kidsSignups)
             .values({
               editionId: edicao.id,
               teamId: equipe.id,
+              secondTeamId: segunda?.id ?? null,
               fullName: input.fullName,
               phone,
               age: input.age ?? null,
@@ -157,30 +158,13 @@ export function registerKidsRoutes(app: Express) {
               vestSize: input.vestSize ?? null,
               experience: input.experience || null,
               notes: input.notes || null,
-              status: temVaga ? "confirmado" : "espera",
+              status: "pendente",
             })
             .returning();
-          return { linha, equipe };
+          return { linha, equipe, segunda };
         });
 
-        const posicao =
-          criado.linha.status === "espera"
-            ? (
-                await db
-                  .select({ n: sql<number>`count(*)::int` })
-                  .from(kidsSignups)
-                  .where(
-                    and(
-                      eq(kidsSignups.editionId, edicao.id),
-                      eq(kidsSignups.teamId, criado.equipe.id),
-                      eq(kidsSignups.status, "espera"),
-                      sql`${kidsSignups.id} <= ${criado.linha.id}`,
-                    ),
-                  )
-              )[0].n
-            : null;
-
-        res.json({ status: criado.linha.status, equipe: criado.equipe.name, posicaoNaFila: posicao ? Number(posicao) : null });
+        res.json({ status: criado.linha.status, equipe: criado.equipe.name, segunda: criado.segunda?.name ?? null });
       } catch (e) {
         const codigo = (e as Error).message;
         if (["equipe_invalida", "ja_inscrito", "equipe_lotada"].includes(codigo)) return res.status(409).json({ error: codigo });
@@ -301,7 +285,7 @@ export function registerKidsRoutes(app: Express) {
       if (!db) return dbOr503(res);
       const dados = z
         .object({
-          status: z.enum(["confirmado", "espera", "cancelado"]).optional(),
+          status: z.enum(["confirmado", "espera", "cancelado", "pendente", "recusado"]).optional(),
           teamId: z.number().int().optional(),
           presente: z.boolean().optional(),
         })

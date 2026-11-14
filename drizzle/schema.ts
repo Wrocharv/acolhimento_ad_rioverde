@@ -9,7 +9,7 @@ export const sexEnum = pgEnum("sex", ["masculino", "feminino"]);
 export const customFieldTypeEnum = pgEnum("custom_field_type", ["text", "checkbox"]);
 export const volunteerRoleEnum = pgEnum("volunteer_role", ["lider", "voluntario"]);
 export const adminRoleEnum = pgEnum("admin_role", ["total", "kids"]);
-export const kidsSignupStatusEnum = pgEnum("kids_signup_status", ["confirmado", "espera", "cancelado"]);
+export const kidsSignupStatusEnum = pgEnum("kids_signup_status", ["confirmado", "espera", "cancelado", "pendente", "recusado"]);
 export const volunteerStatusEnum = pgEnum("volunteer_status", ["pendente", "aprovado", "rejeitado"]);
 
 export const people = pgTable("people", {
@@ -144,6 +144,8 @@ export const kidsSignups = pgTable("kids_signups", {
   id: serial("id").primaryKey(),
   editionId: integer("edition_id").notNull().references(() => kidsEditions.id),
   teamId: integer("team_id").notNull().references(() => kidsTeams.id),
+  /** 2a opcao que a pessoa marcou. O administrador decide em qual das duas ela fica. */
+  secondTeamId: integer("second_team_id").references(() => kidsTeams.id),
   fullName: varchar("full_name", { length: 255 }).notNull(),
   phone: varchar("phone", { length: 20 }).notNull(),
   age: integer("age"),

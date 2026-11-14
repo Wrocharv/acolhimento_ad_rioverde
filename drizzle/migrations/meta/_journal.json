@@ -64,6 +64,13 @@
       "when": 1790206111357,
       "tag": "0008_chemical_excalibur",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794650625083,
+      "tag": "0009_smiling_madrox",
+      "breakpoints": true
     }
   ]
 }

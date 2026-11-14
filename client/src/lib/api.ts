@@ -127,7 +127,7 @@ export type KidsEdicao = {
   open: boolean;
 };
 
-export type KidsTeamVagas = { id: number; name: string; slots: number; confirmados: number; vagas: number; fila: number };
+export type KidsTeamVagas = { id: number; name: string; slots: number; confirmados: number; vagas: number; fila: number; pendentes: number };
 
 export type KidsEvento = {
   edicao: KidsEdicao;
@@ -141,6 +141,7 @@ export type KidsSignup = {
   id: number;
   editionId: number;
   teamId: number;
+  secondTeamId: number | null;
   fullName: string;
   phone: string;
   age: number | null;
@@ -148,7 +149,7 @@ export type KidsSignup = {
   vestSize: string | null;
   experience: string | null;
   notes: string | null;
-  status: "confirmado" | "espera" | "cancelado";
+  status: "confirmado" | "espera" | "cancelado" | "pendente" | "recusado";
   attendedAt: string | null;
   createdAt: string;
 };

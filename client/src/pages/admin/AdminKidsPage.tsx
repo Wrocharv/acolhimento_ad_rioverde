@@ -59,6 +59,17 @@ export default function AdminKidsPage() {
     }
   }
 
+  const [copiado, setCopiado] = useState(false);
+  async function copiarLink(link: string) {
+    try {
+      await navigator.clipboard.writeText(link);
+    } catch {
+      prompt("Copie o link:", link);
+    }
+    setCopiado(true);
+    setTimeout(() => setCopiado(false), 2000);
+  }
+
   async function salvarEvento(e: React.FormEvent) {
     e.preventDefault();
     if (!dados) return;
@@ -79,14 +90,23 @@ export default function AdminKidsPage() {
     }
   }
 
+  const SITUACAO: Record<string, string> = {
+    pendente: "Aguardando aprovação",
+    confirmado: "Confirmado",
+    espera: "Fila de espera",
+    recusado: "Recusado",
+    cancelado: "Cancelado",
+  };
+
   function baixarContatos() {
     if (!dados) return;
     const nomeEquipe = (id: number) => dados.equipes.find((e) => e.id === id)?.name ?? "";
     const linhas = [
-      ["Equipe", "Situação", "Nome", "WhatsApp", "Idade", "Igreja", "Colete", "Já serviu", "Observações"],
+      ["Equipe", "2ª opção", "Situação", "Nome", "WhatsApp", "Idade", "Igreja", "Colete", "Já serviu", "Observações"],
       ...dados.inscricoes.map((i) => [
         nomeEquipe(i.teamId),
-        i.status,
+        i.secondTeamId ? nomeEquipe(i.secondTeamId) : "",
+        SITUACAO[i.status] ?? i.status,
         i.fullName,
         telefone(i.phone),
         i.age ?? "",
@@ -117,6 +137,7 @@ export default function AdminKidsPage() {
   const totalVagas = dados.equipes.reduce((s, e) => s + e.slots, 0);
   const totalFila = dados.equipes.reduce((s, e) => s + e.fila, 0);
   const presentes = dados.inscricoes.filter((i) => i.attendedAt).length;
+  const totalPendentes = dados.equipes.reduce((s, e) => s + e.pendentes, 0);
 
   return (
     <AdminLayout>
@@ -124,6 +145,7 @@ export default function AdminKidsPage() {
         <div>
           <h1 className="font-display text-3xl">Missão Reino</h1>
           <p className="mt-1 text-sm text-muted">
+            {totalPendentes > 0 && <b className="text-warning">{totalPendentes} aguardando aprovação · </b>}
             {totalConfirmados} de {totalVagas} vagas preenchidas · {totalFila} na fila · {presentes} presentes no dia
           </p>
         </div>
@@ -206,7 +228,10 @@ export default function AdminKidsPage() {
           {salvando ? "Salvando…" : "Salvar"}
         </button>
         <p className="mt-3 text-xs text-muted">
-          Link para divulgar: <b className="text-foreground">{location.origin}/missao-reino</b>
+          Link para divulgar: <b className="text-foreground">{location.origin}/missao-reino</b>{" "}
+          <button type="button" className={botaoLeve} onClick={() => copiarLink(`${location.origin}/missao-reino`)}>
+            {copiado ? "Copiado!" : "Copiar link"}
+          </button>
         </p>
       </form>
 
@@ -215,7 +240,8 @@ export default function AdminKidsPage() {
           const lista = porEquipe.get(e.id) ?? [];
           const confirmados = lista.filter((i) => i.status === "confirmado");
           const fila = lista.filter((i) => i.status === "espera");
-          const cancelados = lista.filter((i) => i.status === "cancelado");
+          const pendentes = lista.filter((i) => i.status === "pendente");
+          const cancelados = lista.filter((i) => i.status === "cancelado" || i.status === "recusado");
           const aberta = equipeAberta === e.id;
           return (
             <section key={e.id} className="rounded-2xl border border-border bg-surface p-4">
@@ -232,15 +258,17 @@ export default function AdminKidsPage() {
                 <span className="mt-1 block text-xs text-muted">
                   {e.vagas === 0 ? "Completa" : `${e.vagas} ${e.vagas === 1 ? "vaga" : "vagas"}`}
                   {e.fila > 0 && ` · ${e.fila} na fila`}
+                  {e.pendentes > 0 && <b className="text-warning">{` · ${e.pendentes} aguardando aprovação`}</b>}
                 </span>
               </button>
 
               {aberta && (
                 <div className="mt-3 space-y-3 border-t border-border pt-3">
                   {[
+                    ["Aguardando aprovação", pendentes],
                     ["Confirmados", confirmados],
                     ["Fila de espera", fila],
-                    ["Cancelados", cancelados],
+                    ["Recusados e cancelados", cancelados],
                   ].map(([titulo, grupo]) => {
                     const pessoas = grupo as KidsSignup[];
                     if (!pessoas.length) return null;
@@ -262,6 +290,12 @@ export default function AdminKidsPage() {
                                     {i.vestSize ? ` · colete ${i.vestSize}` : ""}
                                     {i.congregation ? ` · ${i.congregation}` : ""}
                                   </p>
+                                  {i.secondTeamId && (
+                                    <p className="mt-1 text-xs">
+                                      2ª opção: <b>{dados.equipes.find((t) => t.id === i.secondTeamId)?.name ?? "—"}</b>
+                                    </p>
+                                  )}
+                                  {i.status === "recusado" && <p className="mt-1 text-xs font-semibold text-danger">Recusado</p>}
                                   {(i.experience || i.notes) && <p className="mt-1 text-xs text-muted">{[i.experience, i.notes].filter(Boolean).join(" · ")}</p>}
                                 </div>
                                 {i.status === "confirmado" && (
@@ -283,6 +317,32 @@ export default function AdminKidsPage() {
                                 >
                                   WhatsApp
                                 </a>
+                                {i.status === "pendente" && (
+                                  <>
+                                    <button type="button" className={botaoLeve} onClick={() => mudar(i, { status: "confirmado" })}>
+                                      Aceitar
+                                    </button>
+                                    {i.secondTeamId && (
+                                      <button
+                                        type="button"
+                                        className={botaoLeve}
+                                        onClick={() => mudar(i, { status: "confirmado", teamId: i.secondTeamId })}
+                                      >
+                                        Aceitar na 2ª opção
+                                      </button>
+                                    )}
+                                    <button type="button" className={botaoLeve} onClick={() => mudar(i, { status: "espera" })}>
+                                      Fila de espera
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className={botaoLeve}
+                                      onClick={() => confirm(`Recusar a inscrição de ${i.fullName}?`) && mudar(i, { status: "recusado" })}
+                                    >
+                                      Recusar
+                                    </button>
+                                  </>
+                                )}
                                 {i.status === "espera" && (
                                   <button type="button" className={botaoLeve} onClick={() => mudar(i, { status: "confirmado" })}>
                                     Subir para a equipe
@@ -293,7 +353,7 @@ export default function AdminKidsPage() {
                                     Mandar para a fila
                                   </button>
                                 )}
-                                {i.status !== "cancelado" ? (
+                                {i.status === "pendente" ? null : i.status !== "cancelado" && i.status !== "recusado" ? (
                                   <button
                                     type="button"
                                     className={botaoLeve}
@@ -302,8 +362,8 @@ export default function AdminKidsPage() {
                                     Cancelar
                                   </button>
                                 ) : (
-                                  <button type="button" className={botaoLeve} onClick={() => mudar(i, { status: "espera" })}>
-                                    Voltar para a fila
+                                  <button type="button" className={botaoLeve} onClick={() => mudar(i, { status: "pendente" })}>
+                                    Voltar para aprovação
                                   </button>
                                 )}
                                 <select

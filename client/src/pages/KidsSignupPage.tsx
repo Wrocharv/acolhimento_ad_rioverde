@@ -17,7 +17,6 @@ function erroEmPortugues(e: unknown) {
   const codigo = e instanceof ApiError ? e.message : "";
   const textos: Record<string, string> = {
     ja_inscrito: "Esse WhatsApp já está inscrito nesta edição. Se quiser trocar de equipe, fale com a organização.",
-    equipe_lotada: "Essa equipe encheu agora mesmo. Escolha outra ou entre na fila de espera.",
     equipe_invalida: "Escolha uma equipe da lista.",
     inscricoes_encerradas: "As inscrições estão encerradas.",
     telefone_invalido: "Confira o WhatsApp: DDD + número.",
@@ -33,10 +32,11 @@ function erroEmPortugues(e: unknown) {
 export default function KidsSignupPage() {
   const [evento, setEvento] = useState<KidsEvento | null>(null);
   const [equipe, setEquipe] = useState<KidsTeamVagas | null>(null);
+  const [segunda, setSegunda] = useState<number | "">("");
   const [form, setForm] = useState({ fullName: "", phone: "", age: "", congregation: "", vestSize: "", experience: "", notes: "" });
   const [erro, setErro] = useState("");
   const [enviando, setEnviando] = useState(false);
-  const [pronto, setPronto] = useState<{ status: string; equipe: string; posicaoNaFila: number | null } | null>(null);
+  const [pronto, setPronto] = useState<{ status: string; equipe: string; segunda: string | null } | null>(null);
 
   useEffect(() => {
     api.get<KidsEvento>("/api/kids/evento").then(setEvento).catch(() => setErro("Não consegui carregar as equipes."));
@@ -49,8 +49,9 @@ export default function KidsSignupPage() {
     if (form.fullName.trim().split(/\s+/).length < 2) return setErro("Escreva seu nome completo, com sobrenome.");
     setEnviando(true);
     try {
-      const r = await api.post<{ status: string; equipe: string; posicaoNaFila: number | null }>("/api/kids/inscricoes", {
+      const r = await api.post<{ status: string; equipe: string; segunda: string | null }>("/api/kids/inscricoes", {
         teamId: equipe.id,
+        secondTeamId: segunda && segunda !== equipe.id ? segunda : null,
         fullName: form.fullName.trim(),
         phone: form.phone,
         age: form.age ? Number(form.age) : null,
@@ -58,7 +59,6 @@ export default function KidsSignupPage() {
         vestSize: form.vestSize || null,
         experience: form.experience.trim() || null,
         notes: form.notes.trim() || null,
-        aceitaFila: equipe.vagas === 0,
       });
       setPronto(r);
     } catch (err) {
@@ -70,23 +70,19 @@ export default function KidsSignupPage() {
   }
 
   if (pronto) {
-    const naFila = pronto.status === "espera";
     return (
       <div className="mx-auto flex min-h-screen max-w-xl flex-col justify-center px-5 py-10">
         <div className="rounded-2xl border border-border bg-surface p-6 text-center">
-          <p className="font-display text-3xl">{naFila ? "Você está na fila" : "Inscrição confirmada!"}</p>
+          <p className="font-display text-3xl">Inscrição recebida!</p>
           <p className="mt-3 text-sm text-muted">
-            {naFila ? (
+            Você escolheu servir em <b className="text-foreground">{pronto.equipe}</b>
+            {pronto.segunda && (
               <>
-                A equipe <b className="text-foreground">{pronto.equipe}</b> está completa. Você é o <b className="text-foreground">{pronto.posicaoNaFila}º</b> da
-                fila — se abrir vaga, a organização entra em contato pelo seu WhatsApp.
-              </>
-            ) : (
-              <>
-                Você vai servir na equipe <b className="text-foreground">{pronto.equipe}</b>. Guarde a data e fique atento ao WhatsApp: a organização manda os
-                combinados por lá.
+                {" "}
+                (2ª opção: <b className="text-foreground">{pronto.segunda}</b>)
               </>
             )}
+            . A organização vai analisar sua inscrição e confirmar pelo seu WhatsApp. Fique atento!
           </p>
           <p className="mt-4 text-sm font-semibold text-primary">Que Deus abençoe o seu serviço!</p>
         </div>
@@ -128,8 +124,8 @@ export default function KidsSignupPage() {
             <h2 className="font-display text-xl">Onde você quer servir?</h2>
             <p className="mt-1 text-sm text-muted">
               {lotado
-                ? "Todas as equipes estão completas. Você pode entrar na fila de espera da equipe que preferir."
-                : "Escolha uma equipe. As que estão completas aceitam fila de espera."}
+                ? "Todas as equipes estão completas, mas você pode se inscrever: a organização avalia e pode te colocar na fila de espera."
+                : "Escolha a equipe que você prefere (1ª opção). Depois, se quiser, escolha uma 2ª opção."}
             </p>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
               {equipes.map((e) => {
@@ -139,7 +135,10 @@ export default function KidsSignupPage() {
                   <button
                     type="button"
                     key={e.id}
-                    onClick={() => setEquipe(e)}
+                    onClick={() => {
+                      setEquipe(e);
+                      if (segunda === e.id) setSegunda("");
+                    }}
                     className={`rounded-xl border p-3 text-left transition ${escolhida ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-border bg-surface hover:border-primary/40"}`}
                   >
                     <span className="block text-sm font-semibold">{e.name}</span>
@@ -152,9 +151,24 @@ export default function KidsSignupPage() {
             </div>
             {equipe?.vagas === 0 && (
               <p className="mt-3 rounded-xl border border-warning/40 bg-warning/10 p-3 text-sm">
-                A equipe <b>{equipe.name}</b> está completa. Ao enviar, você entra na <b>fila de espera</b> dela. Se preferir servir hoje mesmo, escolha uma
-                equipe com vaga acima.
+                A equipe <b>{equipe.name}</b> está completa. Você pode se inscrever mesmo assim (pode ficar na fila de espera) ou escolher outra com vaga.
               </p>
+            )}
+            {equipe && (
+              <label className="mt-4 block text-sm">
+                <span className="font-medium">2ª opção (opcional)</span>
+                <select className={`mt-1 ${campo}`} value={segunda} onChange={(e) => setSegunda(e.target.value ? Number(e.target.value) : "")}>
+                  <option value="">Só a 1ª opção</option>
+                  {equipes
+                    .filter((t) => t.id !== equipe.id)
+                    .map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name}
+                        {t.vagas === 0 ? " (completa)" : ""}
+                      </option>
+                    ))}
+                </select>
+              </label>
             )}
           </section>
 
@@ -223,7 +237,7 @@ export default function KidsSignupPage() {
             disabled={enviando}
             className="w-full rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-primary-dark disabled:opacity-60"
           >
-            {enviando ? "Enviando…" : equipe?.vagas === 0 ? "Entrar na fila de espera" : "Confirmar minha inscrição"}
+            {enviando ? "Enviando…" : "Enviar minha inscrição"}
           </button>
         </form>
       )}
