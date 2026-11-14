@@ -25,6 +25,9 @@ export default function App() {
       <Route path="/admin/congregacoes" component={AdminCongregationsPage} />
       <Route path="/admin/voluntarios" component={AdminVolunteersPage} />
       <Route path="/admin/administradores" component={AdminAdministratorsPage} />
+      <Route path="/admin/missao-reino/lista" component={AdminKidsListPage} />
+      <Route path="/admin/missao-reino/divulgacao" component={AdminKidsBannerPage} />
+      <Route path="/admin/missao-reino" component={AdminKidsPage} />
       <Route path="/admin/kids/lista" component={AdminKidsListPage} />
       <Route path="/admin/kids/divulgacao" component={AdminKidsBannerPage} />
       <Route path="/admin/kids" component={AdminKidsPage} />

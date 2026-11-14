@@ -55,7 +55,7 @@ export default function AdminKidsListPage() {
           Incluir a fila de espera de cada equipe
         </label>
         <div className="flex gap-2">
-          <a href="/admin/kids" className="rounded-full border border-border px-4 py-2 text-sm font-semibold">
+          <a href="/admin/missao-reino" className="rounded-full border border-border px-4 py-2 text-sm font-semibold">
             Voltar ao painel
           </a>
           <button onClick={() => window.print()} className="rounded-full bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-dark">

@@ -9,8 +9,8 @@ const tabs = [
   { href: "/admin/perguntas", label: "Perguntas personalizadas" },
   { href: "/admin/congregacoes", label: "Congregações" },
   { href: "/admin/voluntarios", label: "Voluntários" },
-  { href: "/admin/kids", label: "Missão Reino", kids: true },
-  { href: "/admin/kids/divulgacao", label: "Divulgação Missão Reino", kids: true },
+  { href: "/admin/missao-reino", label: "Missão Reino", kids: true },
+  { href: "/admin/missao-reino/divulgacao", label: "Divulgação Missão Reino", kids: true },
   { href: "/admin/administradores", label: "Administradores" },
 ];
 
@@ -27,7 +27,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
         if (cancelled) return;
         setEu(admin);
         // Quem so cuida do evento nao abre as telas da igreja: cai direto na area do Kids.
-        if (admin.role === "kids" && !location.startsWith("/admin/kids")) navigate("/admin/kids");
+        if (admin.role === "kids" && !location.startsWith("/admin/kids") && !location.startsWith("/admin/missao-reino")) navigate("/admin/missao-reino");
       })
       .catch(() => {
         if (!cancelled) navigate("/admin/login");
