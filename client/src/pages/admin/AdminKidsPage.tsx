@@ -96,6 +96,32 @@ export default function AdminKidsPage() {
     }
   }
 
+  /** Mensagem pronta do WhatsApp, conforme a situacao da pessoa. Abre no WhatsApp e ainda da para editar. */
+  function mensagemPadrao(i: KidsSignup) {
+    if (!dados) return "";
+    const nome = i.fullName.split(" ")[0];
+    const ed = dados.edicao;
+    const equipe = dados.equipes.find((t) => t.id === i.teamId)?.name ?? "";
+    const data = ed.eventDate ? new Date(`${ed.eventDate}T12:00:00`).toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" }) : "";
+    const quando = [data && `📅 ${data}`, ed.startTime && `⏰ ${ed.startTime}`, ed.place && `📍 ${ed.place}`].filter(Boolean).join("\n");
+    switch (i.status) {
+      case "confirmado":
+        return (
+          `Olá, ${nome}! A paz do Senhor! 🙏\n\n` +
+          `Sua inscrição como voluntário(a) na *${ed.title}* foi *aceita*! Muito obrigado pela sua disposição em servir ao Reino.\n\n` +
+          `Você vai servir na equipe: *${equipe}*.\n\n` +
+          (quando ? `${quando}\n\n` : "") +
+          `Em breve passamos mais orientações por aqui. Deus abençoe a sua vida!`
+        );
+      case "espera":
+        return `Olá, ${nome}! A paz do Senhor! 🙏\n\nObrigado por se inscrever para servir na *${ed.title}*. A equipe *${equipe}* está completa no momento e você está na *fila de espera*. Se abrir uma vaga, avisamos você por aqui.\n\nDeus abençoe!`;
+      case "recusado":
+        return `Olá, ${nome}! A paz do Senhor! 🙏\n\nMuito obrigado pela sua disposição em servir na *${ed.title}*. Desta vez não conseguimos encaixar você nas equipes, mas contamos com você nas próximas!\n\nDeus abençoe!`;
+      default:
+        return `Olá, ${nome}! A paz do Senhor! 🙏\n\nRecebemos sua inscrição para servir na *${ed.title}* (equipe *${equipe}*). Em breve confirmamos por aqui.\n\nDeus abençoe!`;
+    }
+  }
+
   const SITUACAO: Record<string, string> = {
     pendente: "Aguardando aprovação",
     confirmado: "Confirmado",
@@ -325,12 +351,17 @@ export default function AdminKidsPage() {
                               </div>
                               <div className="mt-2 flex flex-wrap gap-2">
                                 <a
-                                  className={botaoLeve}
-                                  href={whatsapp(i.phone, `Oi ${i.fullName.split(" ")[0]}! Aqui é da ${dados.edicao.title}.`)}
+                                  className={
+                                    i.status === "confirmado"
+                                      ? "rounded-full bg-success px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90"
+                                      : botaoLeve
+                                  }
+                                  title="Abre o WhatsApp com a mensagem pronta (dá para mudar antes de enviar)"
+                                  href={whatsapp(i.phone, mensagemPadrao(i))}
                                   target="_blank"
                                   rel="noreferrer"
                                 >
-                                  WhatsApp
+                                  {i.status === "confirmado" ? "WhatsApp: avisar que foi aceito" : "WhatsApp"}
                                 </a>
                                 {i.status === "pendente" && (
                                   <>
