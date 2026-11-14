@@ -44,13 +44,13 @@ export default function AdminKidsBannerPage() {
   const [dados, setDados] = useState<KidsPainel | null>(null);
   const [arte, setArte] = useState({
     chamada: "SEJA VOLUNTÁRIO",
-    titulo: "Missão Reino Kids",
+    titulo: "Missão Reino",
     frase: "Um dia inteiro de alegria para as crianças. Venha servir com a gente!",
     rodape: "Assembleia de Deus · Rio Verde",
   });
   const [estilo, setEstilo] = useState<keyof typeof ESTILOS>("festa");
   const canvas = useRef<HTMLCanvasElement>(null);
-  const link = `${location.origin}/reino-kids`;
+  const link = `${location.origin}/missao-reino`;
 
   useEffect(() => {
     api.get<KidsPainel>("/api/admin/kids/painel").then((d) => {
@@ -209,20 +209,20 @@ export default function AdminKidsBannerPage() {
 
   return (
     <AdminLayout>
-      <h1 className="font-display text-3xl">Divulgação da Missão Reino Kids</h1>
+      <h1 className="font-display text-3xl">Divulgação da Missão Reino</h1>
       <p className="mt-1 text-sm text-muted">A arte e o QR code que levam direto ao formulário de inscrição dos voluntários.</p>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_360px]">
         <div className="rounded-2xl border border-border bg-surface p-4">
           <canvas ref={canvas} width={1080} height={1350} className="w-full rounded-xl" />
           <div className="mt-3 flex flex-wrap gap-2">
-            <button type="button" className={botao} onClick={() => canvas.current && baixar("missao-reino-kids.png", canvas.current.toDataURL("image/png"))}>
+            <button type="button" className={botao} onClick={() => canvas.current && baixar("missao-reino.png", canvas.current.toDataURL("image/png"))}>
               Baixar a arte
             </button>
             <button
               type="button"
               className={botaoLeve}
-              onClick={async () => baixar("qrcode-missao-reino-kids.png", await QRCode.toDataURL(link, { width: 900, margin: 2 }))}
+              onClick={async () => baixar("qrcode-missao-reino.png", await QRCode.toDataURL(link, { width: 900, margin: 2 }))}
             >
               Baixar só o QR code
             </button>
@@ -270,7 +270,7 @@ export default function AdminKidsBannerPage() {
             </div>
           </div>
           <p className="text-xs text-muted">
-            A data, o horário, o local e o número de vagas saem do quadro “Dados do evento”, na aba Missão Reino Kids. Mude lá e a arte se refaz.
+            A data, o horário, o local e o número de vagas saem do quadro “Dados do evento”, na aba Missão Reino. Mude lá e a arte se refaz.
           </p>
         </div>
       </div>

@@ -9,8 +9,8 @@ const tabs = [
   { href: "/admin/perguntas", label: "Perguntas personalizadas" },
   { href: "/admin/congregacoes", label: "Congregações" },
   { href: "/admin/voluntarios", label: "Voluntários" },
-  { href: "/admin/kids", label: "Missão Reino Kids", kids: true },
-  { href: "/admin/kids/divulgacao", label: "Divulgação Kids", kids: true },
+  { href: "/admin/kids", label: "Missão Reino", kids: true },
+  { href: "/admin/kids/divulgacao", label: "Divulgação Missão Reino", kids: true },
   { href: "/admin/administradores", label: "Administradores" },
 ];
 

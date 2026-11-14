@@ -31,6 +31,7 @@ export default function App() {
       <Route path="/admin/pessoas/:id" component={AdminPersonDetailPage} />
       <Route path="/admin/exportar/imprimir" component={AdminExportPrintPage} />
       <Route path="/admin" component={AdminPeoplePage} />
+      <Route path="/missao-reino" component={KidsSignupPage} />
       <Route path="/reino-kids" component={KidsSignupPage} />
       <Route path="/voluntario/painel" component={VolunteerDashboardPage} />
       <Route path="/voluntario" component={VolunteerAuthPage} />

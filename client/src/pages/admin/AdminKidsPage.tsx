@@ -100,7 +100,7 @@ export default function AdminKidsPage() {
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
     const a = document.createElement("a");
     a.href = url;
-    a.download = `missao-reino-kids-${dados.edicao.id}.csv`;
+    a.download = `missao-reino-${dados.edicao.id}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -122,7 +122,7 @@ export default function AdminKidsPage() {
     <AdminLayout>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-display text-3xl">Missão Reino Kids</h1>
+          <h1 className="font-display text-3xl">Missão Reino</h1>
           <p className="mt-1 text-sm text-muted">
             {totalConfirmados} de {totalVagas} vagas preenchidas · {totalFila} na fila · {presentes} presentes no dia
           </p>
@@ -159,7 +159,7 @@ export default function AdminKidsPage() {
             type="button"
             className={botaoLeve}
             onClick={async () => {
-              const title = prompt("Nome da nova edição:", "Missão Reino Kids");
+              const title = prompt("Nome da nova edição (ex.: Missão Reino Kids – Dezembro 2026):", "Missão Reino ");
               if (!title) return;
               const nova = await api.post<{ id: number }>("/api/admin/kids/edicoes", { title });
               carregar(nova.id);
@@ -206,7 +206,7 @@ export default function AdminKidsPage() {
           {salvando ? "Salvando…" : "Salvar"}
         </button>
         <p className="mt-3 text-xs text-muted">
-          Link para divulgar: <b className="text-foreground">{location.origin}/reino-kids</b>
+          Link para divulgar: <b className="text-foreground">{location.origin}/missao-reino</b>
         </p>
       </form>
 
@@ -341,12 +341,63 @@ export default function AdminKidsPage() {
                       }}
                     />
                   </label>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      className={botaoLeve}
+                      onClick={async () => {
+                        const name = prompt("Novo nome da equipe:", e.name)?.trim();
+                        if (!name || name === e.name) return;
+                        await api.patch(`/api/admin/kids/equipes/${e.id}`, { name });
+                        carregar(dados.edicao.id);
+                      }}
+                    >
+                      Renomear
+                    </button>
+                    {!lista.length && (
+                      <button
+                        type="button"
+                        className={botaoLeve}
+                        onClick={async () => {
+                          if (!confirm(`Tirar a equipe "${e.name}" da inscrição?`)) return;
+                          await api.patch(`/api/admin/kids/equipes/${e.id}`, { active: false });
+                          carregar(dados.edicao.id);
+                        }}
+                      >
+                        Tirar equipe
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
             </section>
           );
         })}
       </div>
+
+      <form
+        className="mt-4 flex flex-wrap items-end gap-3 rounded-2xl border border-dashed border-border bg-surface p-4"
+        onSubmit={async (ev) => {
+          ev.preventDefault();
+          const f = ev.currentTarget;
+          const name = (f.elements.namedItem("nome") as HTMLInputElement).value.trim();
+          const slots = Number((f.elements.namedItem("vagas") as HTMLInputElement).value) || 0;
+          if (name.length < 2) return;
+          await api.post("/api/admin/kids/equipes", { name, slots });
+          f.reset();
+          carregar(dados.edicao.id);
+        }}
+      >
+        <label className="block flex-1 text-sm">
+          <span className="font-medium">Nova equipe</span>
+          <input name="nome" placeholder="Ex.: Voluntários (apoio geral)" className={`mt-1 ${campo}`} />
+        </label>
+        <label className="block w-28 text-sm">
+          <span className="font-medium">Vagas</span>
+          <input name="vagas" type="number" min={0} max={200} defaultValue={10} className={`mt-1 ${campo}`} />
+        </label>
+        <button className={botao}>Adicionar equipe</button>
+      </form>
     </AdminLayout>
   );
 }

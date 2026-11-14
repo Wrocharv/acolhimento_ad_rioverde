@@ -9,7 +9,7 @@ const botaoLeve = "rounded-full border border-border px-3 py-1.5 text-xs font-se
 
 const PAPEIS = {
   total: { nome: "Acesso total", detalhe: "Vê o sistema inteiro, inclusive a base de pessoas." },
-  kids: { nome: "Só Missão Reino Kids", detalhe: "Vê apenas as telas do evento: equipes, fila, presença e divulgação." },
+  kids: { nome: "Só Missão Reino", detalhe: "Vê apenas as telas do evento: equipes, fila, presença e divulgação." },
 } as const;
 
 function erroEmPortugues(e: unknown) {
@@ -168,11 +168,11 @@ export default function AdminAdministratorsPage() {
                             mudar(
                               a,
                               { role: a.role === "total" ? "kids" : "total" },
-                              `${a.name} agora tem ${a.role === "total" ? "acesso só ao Missão Reino Kids" : "acesso total"}.`,
+                              `${a.name} agora tem ${a.role === "total" ? "acesso só à Missão Reino" : "acesso total"}.`,
                             )
                           }
                         >
-                          {a.role === "total" ? "Deixar só no Kids" : "Dar acesso total"}
+                          {a.role === "total" ? "Deixar só na Missão Reino" : "Dar acesso total"}
                         </button>
                         <button
                           type="button"

@@ -37,7 +37,7 @@ async function garantirBase(db: Banco) {
   }
   const [edicao] = await db.select({ id: kidsEditions.id }).from(kidsEditions).limit(1);
   if (!edicao) {
-    await db.insert(kidsEditions).values({ title: "Missão Reino Kids" });
+    await db.insert(kidsEditions).values({ title: "Missão Reino" });
   }
 }
 
@@ -213,7 +213,7 @@ export function registerKidsRoutes(app: Express) {
     asyncHandler(async (req: Request, res: Response) => {
       const db = getDb();
       if (!db) return dbOr503(res);
-      const title = String(req.body?.title ?? "").trim() || "Missão Reino Kids";
+      const title = String(req.body?.title ?? "").trim() || "Missão Reino";
       const [nova] = await db.insert(kidsEditions).values({ title }).returning();
       // So uma edicao aberta por vez: as anteriores fecham sozinhas.
       await db.update(kidsEditions).set({ open: false }).where(sql`${kidsEditions.id} <> ${nova.id}`);
