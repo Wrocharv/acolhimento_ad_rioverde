@@ -442,9 +442,22 @@ export default function AdminKidsPage() {
                                     Cancelar
                                   </button>
                                 ) : (
-                                  <button type="button" className={botaoLeve} onClick={() => mudar(i, { status: "pendente" })}>
-                                    Voltar para aprovação
-                                  </button>
+                                  <>
+                                    <button type="button" className={botaoLeve} onClick={() => mudar(i, { status: "pendente" })}>
+                                      Voltar para aprovação
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className={`${botaoLeve} hover:border-danger hover:text-danger`}
+                                      onClick={async () => {
+                                        if (!confirm(`Excluir ${i.fullName} da lista? Isso não pode ser desfeito.`)) return;
+                                        await api.delete(`/api/admin/kids/inscricoes/${i.id}`);
+                                        carregar(dados.edicao.id);
+                                      }}
+                                    >
+                                      Excluir da lista
+                                    </button>
+                                  </>
                                 )}
                                 <select
                                   className="rounded-full border border-border px-2 py-1 text-xs"
