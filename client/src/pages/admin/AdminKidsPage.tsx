@@ -302,6 +302,40 @@ export default function AdminKidsPage() {
                   {e.pendentes > 0 && <b className="text-warning">{` · ${e.pendentes} aguardando aprovação`}</b>}
                 </span>
               </button>
+              <div className="mt-2 flex gap-3 text-xs font-semibold">
+                <button
+                  type="button"
+                  className="text-muted hover:text-primary"
+                  onClick={async () => {
+                    const name = prompt("Novo nome da função:", e.name)?.trim();
+                    if (!name || name === e.name) return;
+                    await api.patch(`/api/admin/kids/equipes/${e.id}`, { name });
+                    carregar(dados.edicao.id);
+                  }}
+                >
+                  Renomear
+                </button>
+                <button
+                  type="button"
+                  className="text-muted hover:text-danger"
+                  onClick={async () => {
+                    const ativos = lista.filter((i) => i.status !== "cancelado" && i.status !== "recusado").length;
+                    if (ativos > 0) {
+                      alert(
+                        `A função "${e.name}" tem ${ativos} ${ativos === 1 ? "inscrito" : "inscritos"} nesta edição. ` +
+                          "Antes de excluir, mude essas pessoas de função (Aceitar na 2ª opção) ou recuse a inscrição.",
+                      );
+                      return;
+                    }
+                    if (!confirm(`Excluir a função "${e.name}"? Ela some do formulário de inscrição.`)) return;
+                    await api.patch(`/api/admin/kids/equipes/${e.id}`, { active: false });
+                    if (equipeAberta === e.id) setEquipeAberta(null);
+                    carregar(dados.edicao.id);
+                  }}
+                >
+                  Excluir
+                </button>
+              </div>
 
               {aberta && (
                 <div className="mt-3 space-y-3 border-t border-border pt-3">
@@ -447,33 +481,6 @@ export default function AdminKidsPage() {
                       }}
                     />
                   </label>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      className={botaoLeve}
-                      onClick={async () => {
-                        const name = prompt("Novo nome da equipe:", e.name)?.trim();
-                        if (!name || name === e.name) return;
-                        await api.patch(`/api/admin/kids/equipes/${e.id}`, { name });
-                        carregar(dados.edicao.id);
-                      }}
-                    >
-                      Renomear
-                    </button>
-                    {!lista.length && (
-                      <button
-                        type="button"
-                        className={botaoLeve}
-                        onClick={async () => {
-                          if (!confirm(`Tirar a equipe "${e.name}" da inscrição?`)) return;
-                          await api.patch(`/api/admin/kids/equipes/${e.id}`, { active: false });
-                          carregar(dados.edicao.id);
-                        }}
-                      >
-                        Tirar equipe
-                      </button>
-                    )}
-                  </div>
                 </div>
               )}
             </section>
